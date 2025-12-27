@@ -397,6 +397,8 @@
 // ==========================================
 // 🏆 LEADERBOARD CONFIGURATION
 // ==========================================
+// WARNING: YOU SHOULD GENERATE NEW KEYS AT DREAMLO.COM
+// BECAUSE YOUR PRIVATE KEY WAS EXPOSED PUBLICLY.
 const LEADERBOARD_CONFIG = {
     public: "694b10348f40bbcf80643f5b", 
     private: "--vISS_EyUuHD0txhWyo4AGlDAXDLNyEqmLtX2Wx64bw" 
@@ -455,7 +457,8 @@ const Leaderboard = {
     async fetch() {
         if(LEADERBOARD_CONFIG.public.includes("YOUR")) return []; 
         try {
-            const targetUrl = `http://dreamlo.com/lb/${LEADERBOARD_CONFIG.public}/json?t=${Date.now()}`;
+            // FIX: Changed http to https to prevent Mixed Content blocking on GitHub Pages
+            const targetUrl = `https://dreamlo.com/lb/${LEADERBOARD_CONFIG.public}/json?t=${Date.now()}`;
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}&disableCache=true`;
             const res = await fetch(proxyUrl);
             const data = await res.json();
@@ -476,15 +479,26 @@ const Leaderboard = {
         if(!name) name = "Anon";
         const score = game.logic.score;
         btn.disabled = true; btn.innerText = "Sending..."; status.innerText = "";
-        const url = `http://dreamlo.com/lb/${LEADERBOARD_CONFIG.private}/add/${encodeURIComponent(name)}/${score}`;
-        const img = new Image(); img.src = url;
-        setTimeout(() => {
-            btn.innerText = "Sent!"; status.innerText = "Score Saved!"; status.style.color = "var(--accent)";
+        
+        // FIX: Changed http to https
+        const url = `https://dreamlo.com/lb/${LEADERBOARD_CONFIG.private}/add/${encodeURIComponent(name)}/${score}`;
+        
+        // FIX: Using fetch with no-cors instead of Image() hack for better HTTPS support
+        try {
+            await fetch(url, { mode: 'no-cors' });
+            btn.innerText = "Sent!"; 
+            status.innerText = "Score Saved!"; 
+            status.style.color = "var(--accent)";
             setTimeout(() => {
                 document.getElementById('submit-score-container').style.display = 'none';
                 this.show(); 
             }, 3000); 
-        }, 1500);
+        } catch(e) {
+            console.error("Submission failed", e);
+            btn.disabled = false;
+            btn.innerText = "Retry";
+            status.innerText = "Error saving score.";
+        }
     },
     async show() {
         const screen = document.getElementById('leaderboard-screen');
